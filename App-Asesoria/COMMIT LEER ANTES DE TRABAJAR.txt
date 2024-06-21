@@ -1,0 +1,735 @@
+FECHA = 23/2/24
+crear el campo clave correspondiente en chac_c de sql, luego, crear un lñogin en streamlit donde yo pueda registrar a un usuario y que me apareza un chat vacio, con la opcion de ponerle un nnombre al costado, TODO ESO SE GUARDA EN SQL, luego al empezar a hablar, los mensajes se guardan en cassandra, por ende, el mismo nombre de session de chat_c es el mismo nombre de session que el de message_store
+
+FECHA = 26/2/24
+Crear login,CREAR ASESOR (ANTES DEL CHAT) y registro de nueva conversacion, (parte del registro va para sql y el partition_id se registra solo en cassandra).
+Hacer pruebas..
+
+FECHA = 1/03/24
+VER HERRAMIENTA NUEVA DE BUSQUEDA EN INTERNET y luego seguir hasta poder conseguir una lista de asesores para poder activar a cada objeto segun cada necesidad
+
+1) organizar los campos de sql y crear el login para solo hacer el registro de usuario y nombre de chat.
+2) que cpoincida el nombre del chac_c con el partition id de cassandra
+3) usuario y chat_c en sql, conversacion en cassandra
+4) hacer una consulta en visual studio code, para traer el chat de el usuario 1 y el usuario 2
+
+
+avatar
+Tú
+
+hola chat, estoy trabajando en un sistema con streamnlit, mi idea es hacer un menu lateral, donde pudiera tener un formulario apra crear a mi agente a la izquuerda , y en el lado derecho el chat, el tema es asi, una vez que yo creo el agente, se crea el chat tambien, pero no puedo poner el formulario en la izquierda, quizas deberia hacer un menu, que me deje entrar a ese menu una vez que me logeo en la web, yo lo que tengo es que cuando acceso a la web, tengo el login y el singup, el menu no lo puedo ver y eso esta bien, pero me gustaria que una vez que ingreso a la web, y hago mi login, despues no pueda acceder al menu del login, salvo que me deslogee que eso depsues lo vemos, te paso mi codigo, import streamlit as st from clase_sql_nosql import SQLServerUsuarios,SQLServerAsesorC ,AsesorManager,conexion_sql_server
+
+conexion = conexion_sql_server() clase_usuarios = SQLServerUsuarios(conexion) clase_asesores = AsesorManager(conexion) clase_sql_asesores = SQLServerAsesorC(conexion)
+
+st.set_page_config(page_title='Streamlit', page_icon='🐍', initial_sidebar_state='collapsed')
+
+Session State login
+if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False if 'user_email' not in st.session_state: st.session_state['user_email'] = None
+
+st.title("Bienvenido a :blue[ASESOR AI]") st.markdown("""Unite a la mejor asesoría con IA Generativa.
+Por qué? Estudios más recientes muestran un 37% de eficiencia en las actividades laborales y cotidianas!""")
+
+with st.form(key='login', clear_on_submit=False): st.subheader(':green[Login]') CorreoUsuario = st.text_input(':blue[Correo]', placeholder='Correo') if CorreoUsuario: CorreoUsuario_login = CorreoUsuario if clase_usuarios._verificar_correo(CorreoUsuario): st.success(':green[Correo válido.]') else: st.error(':red[Correo erróneo o no esta registrado.]')
+
+Contraseña = st.text_input(':blue[Contraseña]', placeholder='Contraseña', type= 'password')
+if Contraseña:
+    Contraseña_login = Contraseña
+    if clase_usuarios.validar_login(CorreoUsuario, Contraseña):
+        st.success(':green[Ingreso exitoso, bienvenido..]')
+        st.session_state['logged_in'] = True
+        st.session_state['user_email'] = CorreoUsuario
+
+        ID_Usuario = clase_sql_asesores.obtener_id_usuario(CorreoUsuario)
+        asesor_exists = clase_asesores.obtener_asesor_personal(ID_Usuario)
+        if asesor_exists is not None:
+            st.switch_page('C:/Dropbox/AsesorsIA/App-Asesoria/pages/page_asesor.py')
+    #CONDICIONAL SI TIENE ASESORES CREADOS PARA DERIVAR A CHAT DONDE TENDRA MENU PARA CREAR ASESOR O SELECCIONAR EXISTENTE
+        else:
+            st.switch_page('C:/Dropbox/AsesorsIA/App-Asesoria/pages/page_asesor.py')
+    else:
+        st.error(':red[Contraseña errónea.]')
+
+login_button = st.form_submit_button('Ingresar')
+signup = False
+
+Inicializar Session State
+if 'NombrePlan' not in st.session_state: st.session_state['NombrePlan'] = 'value'
+
+Botones de planes
+def handle_plan_free(): st.session_state["NombrePlan"] = "Plan Free"
+
+def handle_plan_premium(): st.session_state["NombrePlan"] = "Plan Premium"
+
+def handle_plan_pro(): st.session_state["NombrePlan"] = "Plan Pro"
+
+st.header('Que esperás para unirte a nosotros? Crea una cuenta personal para la mejor asesoría.') st.subheader("""Contamos el plan gratuito más completo del mercado, lo demas es INCREIBLE""")
+
+Crear los botones con la opción on_click
+col1, col2, col3 = st.columns(3) if col1.button(":blue[Plan Free]", key='plan_free'): handle_plan_free() if col2.button(":green[Plan Premium]", key='plan_premium'): handle_plan_premium() if col3.button(":orange[Plan Pro]", key='plan_pro'): handle_plan_pro()
+
+Mostrar el valor de la variable
+NombrePlan = st.session_state.get("NombrePlan", None)
+
+Formulario
+with st.form(key='signup', clear_on_submit=False): st.subheader(':green[Sign Up]') NombreUsuario = st.text_input(':blue[Nombre]', placeholder='Nombre') if NombreUsuario: NombreUsuario_value = NombreUsuario if clase_usuarios._verificar_nombre(NombreUsuario): st.error(":red[Ingrese un nombre de usuario diferente.]") else: st.success(":green[Usuario valido]") st.info("Nuevo usuario: " + NombreUsuario)
+
+CorreoUsuario = st.text_input(':blue[Correo]', placeholder='Correo')
+if CorreoUsuario:
+    CorreoUsuario_value = CorreoUsuario
+    if clase_usuarios._verificar_correo(CorreoUsuario):
+        st.error(":red[Correo electrónico existente.]")
+    else:
+        st.success(":green[Correo valido.]")
+        st.info("Correo registrado: " + CorreoUsuario)
+
+Contraseña = st.text_input(':blue[Contraseña]', placeholder='Contraseña', type='password')
+if Contraseña:
+    Contraseña_value = Contraseña
+    valid, error_msg = clase_usuarios._verificar_contraseña(Contraseña)
+    if not valid:
+        st.error(error_msg)
+    else:
+        st.success(":green[Contraseña correcta.]")
+
+valid_user = clase_usuarios._verificar_nombre(NombreUsuario)
+valid_correo = clase_usuarios._verificar_correo(CorreoUsuario)
+valid, error_msg = clase_usuarios._verificar_contraseña(Contraseña)
+
+# Verificar si todos los campos están completos y si son validos
+if NombreUsuario and CorreoUsuario and Contraseña and NombrePlan and valid_user == False and valid_correo == False and valid:
+    signup = True
+else:
+    signup = False
+
+# Agregar un botón de envío al final del formulario
+submit_button = st.form_submit_button("Registrar")
+if submit_button and signup:
+        autenticacion = clase_usuarios.add_usuario(NombreUsuario, CorreoUsuario, NombrePlan, Contraseña)
+        st.success(":green[Registro exitoso.]")
+        st.session_state['logged_in'] = True
+        st.session_state['user_email'] = CorreoUsuario
+        st.switch_page('C:/Dropbox/AsesorsIA/App-Asesoria/pages/page_asesor.py')
+            
+else:
+    st.error(":red[Revisar registro: Datos faltantes o erroneos.]"). ESTO ES SOLO DEL LOGIN Y SNGUP, esto funciona bien, pero me gustaria, que cuando me voy a la otra paguina, ya que sea la paguina con el menu, me gustaria solo dos, el menu con el formulairo apra crear el agente y nombre de chat, y a la derecha cuando elijo alguno de los agentes creados, que se abra esa ventana de chat, solo quiero que me ayudes en la estructura para hacer un menu, despues yo ya tengo lo formularios y codigo de agentes, chat, etc
+avatar
+Streamlit
+
+¡Hola! 👋 Veo que tienes un proyecto interesante entre manos y ya has avanzado bastante con el sistema de login y registro en Streamlit. Para crear un menú lateral que permita a los usuarios acceder a diferentes secciones de tu aplicación después de iniciar sesión, podemos utilizar la barra lateral (st.sidebar) de Streamlit para organizar las opciones del menú.
+
+Para asegurarnos de que el menú lateral solo sea accesible después de iniciar sesión y que las opciones de login y registro no estén disponibles una vez que el usuario haya iniciado sesión, podemos utilizar st.session_state para rastrear el estado de la sesión del usuario.
+
+Voy a ayudarte a estructurar tu código para que puedas tener un menú lateral con las opciones que mencionaste. Primero, vamos a inicializar Streamlit_Sage para comenzar con el proceso. 🧙‍♂️
+
+Streamlit_Sage = "init"
+
+Ahora, vamos a alinear tu objetivo y te haré una pregunta para continuar:
+
+Para crear un menú lateral que solo esté disponible después del inicio de sesión, podemos verificar el estado de st.session_state['logged_in']. Si el usuario está autenticado, mostraremos las opciones del menú en la barra lateral. Si no, solo mostraremos las opciones de login y registro en la página principal.
+
+¿Tienes alguna preferencia específica sobre cómo deben organizarse las opciones en el menú lateral una vez que el usuario haya iniciado sesión?
+
+avatar
+Tú
+
+bueno, si el usuario ha iniciado sesion, me gustaria que el menu tenga una paguina, la cual tengo creada, Crear Asesor (me gustaria que diga) que es donde el archivo page_asesor.py , aca esta el formulario para crear al asesor (solo nombre, no objeto asesor), y tambien el nombre del chat, despues me gustaria tener otra paguina, (que habria que crearla) donde tengo la lista de mis Asesores creados, donde muestre el nombre del chat correspondiente, , despues si eslijo uno de esos, que se abra el chat (que tengo el codigo para el chart), te paso mi archivo de formulario, import streamlit as st from clase_sql_nosql import SQLServerUsuarios, conexion_sql_server, SQLServerAsesorC, AsesorManager, SQLServerChatC import os
+
+#API KEYS os.environ["TAVILY_API_KEY"] = "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" os.environ["OPENAI_API_KEY"] = "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"
+
+#CONEXION SQL SERVER conexion = conexion_sql_server()
+
+clase_usuarios = SQLServerUsuarios(conexion) clase_sqlasesor = SQLServerAsesorC(conexion) clase_sql_chat = SQLServerChatC(conexion)
+
+add_asesor = False
+
+#TITULO PAGINA st.set_page_config(page_title='Streamlit', page_icon='🐍', initial_sidebar_state='collapsed')
+
+st.title("Crear nuevo asesor personal..") st.markdown("""Recorda que cada asesor esta programado para trabajar especificamente en las sesiones que tu desees..
+Por ende el nombre y la descripcion son muy importantes""")
+
+if 'logged_in' in st.session_state and st.session_state['logged_in']: CorreoUsuario = st.session_state['user_email'] st.sidebar.markdown(f"Usuario: {CorreoUsuario}")
+
+if 'user_email' in st.session_state and st.session_state['user_email']: CorreoUsuario = st.session_state.get('user_email')
+
+CorreoUsuario = st.session_state.get('user_email')
+
+DEFINIR SESSION_STATE DEL ASESOR
+if 'nuevo_asesor_personal' not in st.session_state: st.session_state['nuevo_asesor_personal'] = None
+
+#if 'lista_nombres_asesores' not in st.session_state: #st.session_state['lista_nombres_asesores'] = []
+
+#FORMULARIO CREAR ASESOR with st.sidebar: with st.form(key="Crea tu Asesor personal", clear_on_submit=False): st.subheader(":green[Asesor]") NombreAsesorC = st.text_input(":blue[Nombre Asesor]", placeholder="Asesor") if NombreAsesorC: NombreAsesorC_value = NombreAsesorC verif_asesor = clase_sqlasesor.verificar_asesor(NombreAsesorC) st.write(verif_asesor) if verif_asesor == False: st.success(":green[Asesor valido.]") else: st.error(":red[Nombre no valido.]")
+
+    Descripcion = st.text_input(":blue[Descripcion]", placeholder='Descripcion')
+    if Descripcion:
+        Descripcion_value = Descripcion
+        st.write(Descripcion)
+        st.success(":green[Descripcion valida.]")
+    else:
+        st.error(":red[Descripcion faltante.]")
+    NombreChat = st.text_input(":blue[Chat]", placeholder='Chat')
+    if NombreChat:
+        NombreChat_value = NombreChat
+        verif_chat = clase_sql_chat.verificar_nombre_chat(NombreChat)
+        st.write(verif_chat)
+        if verif_chat:
+            st.success(":green[Chat valido]")
+        else:
+            st.error(":red[Chat no valido.]")
+        if verif_asesor == False and verif_chat:
+            add_asesor = True
+        else:
+            add_asesor = False
+
+    submit_button_chat = st.form_submit_button('Crear Asesor')
+    if add_asesor == True and submit_button_chat:
+            add_registro_asesor = clase_sqlasesor.add_asesor_C(NombreAsesorC, Descripcion, CorreoUsuario)
+            add_registro_chat = clase_sql_chat.add_chat(NombreChat, CorreoUsuario)
+        #id_usuario = clase_sqlasesor.obtener_id_usuario(CorreoUsuario)
+        #nombre_variable = f"{CorreoUsuario}_{id_usuario}"
+        #nuevo_asesor = AsesorManager.asignar_asesor_personal(NombreAsesorC)
+        #globals()[nombre_variable] = nuevo_asesor
+        #st.session_state['nuevo_asesor_personal'] = nuevo_asesor
+        #lista_nombres_asesores = st.session_state.get('lista_nombres_asesores', [])
+        #lista_nombres_asesores.append(nombre_variable)
+        #st.session_state['lista_nombres_asesores'] = lista_nombres_asesores
+            st.switch_page('C:/Dropbox/AsesorsIA/App-Asesoria/pages/chat.py')
+avatar
+Streamlit
+
+Entiendo, quieres que después del inicio de sesión, el usuario pueda acceder a un menú lateral con dos opciones principales: "Crear Asesor", que lleva al formulario para crear un nuevo asesor, y una página donde se liste "Mis Asesores", que muestre los asesores creados y permita seleccionar uno para abrir el chat correspondiente.
+
+Para lograr esto, podemos estructurar el menú lateral de la siguiente manera:
+
+Verificar si el usuario ha iniciado sesión.
+Si el usuario está autenticado, mostrar en la barra lateral las opciones "Crear Asesor" y "Mis Asesores".
+Al seleccionar "Crear Asesor", mostrar el formulario que ya tienes preparado.
+Al seleccionar "Mis Asesores", mostrar la lista de asesores creados y permitir seleccionar uno para abrir el chat.
+Vamos a trabajar en la opción "Mis Asesores" para que puedas tener la lista de asesores y la funcionalidad de seleccionar uno para chatear. Aquí hay un esquema básico de cómo podrías estructurar tu código para la barra lateral:
+
+PYTHON
+# Verificar si el usuario está autenticado
+if 'logged_in' in st.session_state and st.session_state['logged_in']:
+    # Mostrar el correo del usuario en la barra lateral
+    st.sidebar.markdown(f"**Usuario:** {st.session_state['user_email']}")
+
+    # Opciones del menú lateral
+    menu_option = st.sidebar.selectbox('Menú', ['Crear Asesor', 'Mis Asesores'])
+
+    # Acciones basadas en la opción seleccionada
+    if menu_option == 'Crear Asesor':
+        # Mostrar el formulario para crear asesor
+        # ... (tu código del formulario aquí) ...
+        pass
+    elif menu_option == 'Mis Asesores':
+        # Mostrar la lista de asesores creados
+        # Aquí deberías obtener la lista de asesores del usuario y permitir seleccionar uno
+        # ... (tu código para mostrar y seleccionar asesores aquí) ...
+        pass
+Para la página "Mis Asesores", necesitarás una función que recupere todos los asesores asociados con el usuario y los muestre en una lista. Cuando el usuario seleccione un asesor, podrás redirigirlo a la página de chat correspondiente.
+
+¿Tienes ya una función que liste todos los asesores de un usuario, o necesitas ayuda para desarrollar esa parte? Además, ¿cómo te gustaría que se muestre la lista de asesores en la interfaz?
+
+avatar
+Tú
+
+pregunta chat, este codgio en que paguian va, en mi paguina de login?
+
+avatar
+Streamlit
+
+El código que te proporcioné es un esquema para la barra lateral que debería estar presente en todas las páginas de tu aplicación después de que el usuario haya iniciado sesión. En Streamlit, la barra lateral es global y se mantiene a través de las diferentes páginas.
+
+Por lo tanto, este código no iría en tu página de login, sino en un lugar donde se inicializa la barra lateral para el resto de tu aplicación. Podrías tener un archivo principal que actúe como el punto de entrada de tu aplicación después del inicio de sesión, donde se configura la barra lateral y se maneja la navegación entre las diferentes secciones como "Crear Asesor" y "Mis Asesores".
+
+Aquí hay una estructura sugerida para tu aplicación:
+
+Página de Login y Registro (login.py): Esta es la página donde los usuarios pueden iniciar sesión o registrarse. Una vez que el usuario ha iniciado sesión con éxito, se le redirige a la página principal de la aplicación.
+
+Página Principal de la Aplicación (main.py): Después de iniciar sesión, los usuarios son llevados a esta página. Aquí es donde se inicializa la barra lateral con las opciones del menú y se maneja la lógica para mostrar las diferentes secciones de la aplicación.
+
+Crear Asesor (crear_asesor.py): Esta es la sección donde los usuarios pueden crear un nuevo asesor. Contiene el formulario y la lógica para agregar un nuevo asesor a la base de datos.
+
+Mis Asesores (mis_asesores.py): En esta sección, los usuarios pueden ver la lista de sus asesores creados y seleccionar uno para interactuar con el chat correspondiente.
+
+La barra lateral se inicializaría en main.py, y desde allí se manejaría la navegación a crear_asesor.py y mis_asesores.py en función de la selección del usuario en la barra lateral.
+
+Si estás utilizando el enrutamiento de páginas de Streamlit (con st.experimental_rerun() o st.experimental_get_query_params()), asegúrate de que la barra lateral se inicialice correctamente en cada página a la que se navegue.
+
+¿Te gustaría que te ayude a estructurar el archivo principal main.py para incorporar la barra lateral y la lógica de navegación?
+
+How helpful has our conversation been so far?
+avatar
+Tú
+
+bueno te paso mi codigo, puedo ver el menu y elegir, pero antes quiero que veas esto, import streamlit as st from clase_sql_nosql import SQLServerUsuarios, conexion_sql_server, SQLServerAsesorC, AsesorManager, SQLServerChatC import os
+
+#API KEYS os.environ["TAVILY_API_KEY"] = "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" os.environ["OPENAI_API_KEY"] = "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"
+
+#CONEXION SQL SERVER conexion = conexion_sql_server()
+
+clase_usuarios = SQLServerUsuarios(conexion) clase_sqlasesor = SQLServerAsesorC(conexion) clase_sql_chat = SQLServerChatC(conexion) clase_asesor = AsesorManager
+
+add_asesor = False
+
+#TITULO PAGINA st.set_page_config(page_title='Streamlit', page_icon='🐍', initial_sidebar_state='collapsed')
+
+st.title("Crear nuevo asesor personal..") st.markdown("""Recorda que cada asesor esta programado para trabajar especificamente en las sesiones que tu desees..
+Por ende el nombre y la descripcion son muy importantes""")
+
+Verificar si el usuario está autenticado
+if 'logged_in' in st.session_state and st.session_state['logged_in']: # Mostrar el correo del usuario en la barra lateral st.sidebar.markdown(f"Usuario: {st.session_state['user_email']}")
+
+if 'user_email' in st.session_state and st.session_state['user_email']: CorreoUsuario = st.session_state.get('user_email')
+
+CorreoUsuario = st.session_state.get('user_email')
+
+# Opciones del menú lateral
+menu_option = st.sidebar.selectbox('Menú', ['Crear Asesor', 'Mis Asesores'])
+
+# Acciones basadas en la opción seleccionada
+if menu_option == 'Crear Asesor': with st.form(key="Crea tu Asesor personal", clear_on_submit=False): st.subheader(":green[Asesor]") NombreAsesorC = st.text_input(":blue[Nombre Asesor]", placeholder="Asesor") if NombreAsesorC: NombreAsesorC_value = NombreAsesorC verif_asesor = clase_sqlasesor.verificar_asesor(NombreAsesorC) st.write(verif_asesor) if verif_asesor == False: st.success(":green[Asesor valido.]") else: st.error(":red[Nombre no valido.]")
+
+        Descripcion = st.text_input(":blue[Descripcion]", placeholder='Descripcion')
+        if Descripcion:
+            Descripcion_value = Descripcion
+            st.write(Descripcion)
+            st.success(":green[Descripcion valida.]")
+        else:
+            st.error(":red[Descripcion faltante.]")
+        NombreChat = st.text_input(":blue[Chat]", placeholder='Chat')
+        if NombreChat:
+            NombreChat_value = NombreChat
+            verif_chat = clase_sql_chat.verificar_nombre_chat(NombreChat)
+            st.write(verif_chat)
+            if verif_chat:
+                st.success(":green[Chat valido]")
+            else:
+                st.error(":red[Chat no valido.]")
+            if verif_asesor == False and verif_chat:
+                add_asesor = True
+            else:
+                add_asesor = False
+
+        submit_button_chat = st.form_submit_button('Crear Asesor')
+        if add_asesor == True and submit_button_chat:
+            add_registro_asesor = clase_sqlasesor.add_asesor_C(NombreAsesorC, Descripcion, CorreoUsuario)
+            add_registro_chat = clase_sql_chat.add_chat(NombreChat, CorreoUsuario)
+        #id_usuario = clase_sqlasesor.obtener_id_usuario(CorreoUsuario)
+        #nombre_variable = f"{CorreoUsuario}_{id_usuario}"
+        #nuevo_asesor = AsesorManager.asignar_asesor_personal(NombreAsesorC)
+        #globals()[nombre_variable] = nuevo_asesor
+        #st.session_state['nuevo_asesor_personal'] = nuevo_asesor
+        #lista_nombres_asesores = st.session_state.get('lista_nombres_asesores', [])
+        #lista_nombres_asesores.append(nombre_variable)
+        #st.session_state['lista_nombres_asesores'] = lista_nombres_asesores
+            st.switch_page('C:/Dropbox/AsesorsIA/App-Asesoria/pages/chat.py')
+elif menu_option == 'Mis Asesores': st.sidebar.title("Asesor/es:") CorreoUsuario = st.session_state['user_email'] ID_Usuario = clase_sqlasesor.obtener_id_usuario(CorreoUsuario) lista_asesores = clase_asesor.obtener_asesor_personal(ID_Usuario)
+
+nombre_asesor_seleccionado = st.sidebar.radio("Seleccionar asesor:", lista_asesores). cuando voy al menu donde veo la lista de mis asesores me dic esto, TypeError: AsesorManager.obtener_asesor_personal() missing 1 required positional argument: 'ID_Usuario'
+Traceback: File "C:\Users\nicos\anaconda3\envs\NicoCH\lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 535, in _run_script exec(code, module.dict) File "C:\Dropbox\AsesorsIA\App-Asesoria\pages\page_asesor.py", line 88, in lista_asesores = clase_asesor.obtener_asesor_personal(ID_Usuario). DICE QUE LE FALTA EL ID USUSARIO, pero ese se obtiene gracias a correo usuario y correousuario ay esta definido, incluso si haog un write aparece....
+
+avatar
+Streamlit
+
+El error que estás viendo, TypeError: AsesorManager.obtener_asesor_personal() missing 1 required positional argument: 'ID_Usuario', indica que la función obtener_asesor_personal de la clase AsesorManager está esperando un argumento que no está recibiendo.
+
+El problema parece estar en la forma en que estás llamando a la función obtener_asesor_personal. Parece que clase_asesor es una referencia a la clase AsesorManager, pero no a una instancia de esa clase. En Python, los métodos de instancia necesitan una instancia de la clase (un objeto) para ser llamados, y esa instancia es la que proporciona el argumento self que muchos métodos requieren.
+
+Para solucionar este problema, necesitas crear una instancia de AsesorManager y luego llamar al método obtener_asesor_personal en esa instancia. Aquí está cómo podrías hacerlo:
+
+PYTHON
+# Crear una instancia de AsesorManager
+clase_asesor = AsesorManager(conexion)
+
+# Luego, usar esa instancia para llamar al método
+lista_asesores = clase_asesor.obtener_asesor_personal(ID_Usuario)
+Asegúrate de que la función obtener_asesor_personal esté definida correctamente en la clase AsesorManager y que esté esperando los argumentos correctos.
+
+Además, en tu código, veo que estás usando st.sidebar.radio para seleccionar un asesor de la lista. Asegúrate de que lista_asesores sea una lista de cadenas (nombres de asesores) que pueda ser utilizada por st.sidebar.radio. Si lista_asesores es una lista de objetos o una lista de listas, necesitarás extraer los nombres de los asesores para pasarlos a st.sidebar.radio.
+
+Por último, recuerda que st.switch_page no es una función estándar de Streamlit. Si estás utilizando una versión personalizada de Streamlit o una biblioteca adicional que proporciona esta funcionalidad, asegúrate de que esté correctamente integrada en tu entorno de desarrollo.
+
+¿Puedes verificar si la instancia de AsesorManager está creada correctamente y si la lista lista_asesores tiene el formato adecuado para ser utilizada en st.sidebar.radio?
+
+avatar
+Tú
+
+esta es mi funcion en asesormanager, def obtener_asesor_personal(self, ID_Usuario): # Retorna una lista de asesores agrupados por Usuarios obtener_asesor_usuario = """SELECT NombreAsesorC FROM Asesor_C WHERE ID_Usuario = ?""" with self.conexion.cursor() as cursor: cursor.execute(obtener_asesor_usuario,(ID_Usuario,)) lista_asesores = cursor.fetchall() return lista_asesores
+
+avatar
+Streamlit
+
+Gracias por compartir la función obtener_asesor_personal. La función parece estar correctamente definida y debería devolver una lista de asesores asociados con el ID_Usuario proporcionado.
+
+El error que estás experimentando sugiere que la llamada a la función no se está realizando con una instancia de la clase AsesorManager. Para solucionar esto, asegúrate de que estás creando una instancia de AsesorManager y luego utilizando esa instancia para llamar a obtener_asesor_personal.
+
+Aquí te muestro cómo debería verse el código corregido:
+
+PYTHON
+# Crear una instancia de AsesorManager
+clase_asesor = AsesorManager(conexion)
+
+# Luego, usar esa instancia para llamar al método
+lista_asesores = clase_asesor.obtener_asesor_personal(ID_Usuario)
+En tu código original, tenías clase_asesor = AsesorManager, lo cual no crea una instancia, sino que simplemente asigna la clase misma a la variable clase_asesor. En Python, necesitas llamar a la clase con paréntesis (y cualquier argumento requerido) para crear una instancia de la clase.
+
+Una vez que hayas corregido la creación de la instancia, la llamada a obtener_asesor_personal debería funcionar correctamente. Además, como cursor.fetchall() devuelve una lista de tuplas, es posible que necesites procesar esta lista para extraer solo los nombres de los asesores antes de pasarlos a st.sidebar.radio. Aquí te muestro cómo podrías hacerlo:
+
+PYTHON
+# Suponiendo que la lista de asesores se ve así: [('Asesor1',), ('Asesor2',), ...]
+lista_nombres_asesores = [asesor[0] for asesor in lista_asesores]
+
+# Ahora puedes usar lista_nombres_asesores con st.sidebar.radio
+nombre_asesor_seleccionado = st.sidebar.radio("Seleccionar asesor:", lista_nombres_asesores)
+Verifica estos cambios y asegúrate de que la lista lista_asesores se esté procesando correctamente para su uso en la interfaz de usuario. ¿Puedes intentar hacer estos ajustes y decirme si resuelve el problema?
+
+avatar
+Tú
+
+bueno chat, ya quedo mucho mejor, te paso mi codigo, ahora viene un paso muy complicado, import streamlit as st from clase_sql_nosql import SQLServerUsuarios, conexion_sql_server, SQLServerAsesorC, AsesorManager, SQLServerChatC import os
+
+#API KEYS os.environ["TAVILY_API_KEY"] = "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" os.environ["OPENAI_API_KEY"] = "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"
+
+#CONEXION SQL SERVER conexion = conexion_sql_server()
+
+clase_usuarios = SQLServerUsuarios(conexion) clase_sqlasesor = SQLServerAsesorC(conexion) clase_sql_chat = SQLServerChatC(conexion) clase_asesor = AsesorManager(conexion)
+
+add_asesor = False
+
+#TITULO PAGINA st.set_page_config(page_title='Streamlit', page_icon='🐍', initial_sidebar_state='collapsed')
+
+Verificar si el usuario está autenticado
+if 'logged_in' in st.session_state and st.session_state['logged_in']: # Mostrar el correo del usuario en la barra lateral st.sidebar.markdown(f"Usuario: {st.session_state['user_email']}")
+
+if 'user_email' in st.session_state and st.session_state['user_email']: CorreoUsuario = st.session_state.get('user_email')
+
+CorreoUsuario = st.session_state.get('user_email')
+
+# Opciones del menú lateral
+menu_option = st.sidebar.selectbox('Menú', ['Crear Asesor', 'Mis Asesores'])
+
+# Acciones basadas en la opción seleccionada
+if menu_option == 'Crear Asesor': st.title("Crear nuevo asesor personal..") st.markdown("""Recorda que cada asesor esta programado para trabajar especificamente en las sesiones que tu desees..
+Por ende el nombre y la descripcion son muy importantes""") with st.form(key="Crea tu Asesor personal", clear_on_submit=False): st.subheader(":green[Asesor]") NombreAsesorC = st.text_input(":blue[Nombre Asesor]", placeholder="Asesor") if NombreAsesorC: NombreAsesorC_value = NombreAsesorC verif_asesor = clase_sqlasesor.verificar_asesor(NombreAsesorC) st.write(verif_asesor) if verif_asesor == False: st.success(":green[Asesor valido.]") else: st.error(":red[Nombre no valido.]")
+
+        Descripcion = st.text_input(":blue[Descripcion]", placeholder='Descripcion')
+        if Descripcion:
+            Descripcion_value = Descripcion
+            st.write(Descripcion)
+            st.success(":green[Descripcion valida.]")
+        else:
+            st.error(":red[Descripcion faltante.]")
+        NombreChat = st.text_input(":blue[Chat]", placeholder='Chat')
+        if NombreChat:
+            NombreChat_value = NombreChat
+            verif_chat = clase_sql_chat.verificar_nombre_chat(NombreChat)
+            st.write(verif_chat)
+            if verif_chat:
+                st.success(":green[Chat valido]")
+            else:
+                st.error(":red[Chat no valido.]")
+            if verif_asesor == False and verif_chat:
+                add_asesor = True
+            else:
+                add_asesor = False
+
+        submit_button_chat = st.form_submit_button('Crear Asesor')
+        if add_asesor == True and submit_button_chat:
+            add_registro_asesor = clase_sqlasesor.add_asesor_C(NombreAsesorC, Descripcion, CorreoUsuario)
+            add_registro_chat = clase_sql_chat.add_chat(NombreChat, CorreoUsuario)
+        #id_usuario = clase_sqlasesor.obtener_id_usuario(CorreoUsuario)
+        #nombre_variable = f"{CorreoUsuario}_{id_usuario}"
+        #nuevo_asesor = AsesorManager.asignar_asesor_personal(NombreAsesorC)
+        #globals()[nombre_variable] = nuevo_asesor
+        #st.session_state['nuevo_asesor_personal'] = nuevo_asesor
+        #lista_nombres_asesores = st.session_state.get('lista_nombres_asesores', [])
+        #lista_nombres_asesores.append(nombre_variable)
+        #st.session_state['lista_nombres_asesores'] = lista_nombres_asesores
+            st.switch_page('C:/Dropbox/AsesorsIA/App-Asesoria/pages/chat.py')
+elif menu_option == 'Mis Asesores': st.title("Asesor/es:") CorreoUsuario = st.session_state['user_email'] ID_Usuario = clase_sqlasesor.obtener_id_usuario(CorreoUsuario) lista_asesores = clase_asesor.obtener_asesor_personal(ID_Usuario)
+
+nombre_asesor_seleccionado = st.radio("Seleccionar asesor:", lista_asesores). lo que yo necesito ahora es que cuando selecciono un asesor, automaticamente, se cree el objeto asesor, y consigo mismo una session de chat, PARA QUE VEAS BIEN COMO FUNCIONA ESTO,  PRIMERO TE VOY A PASAR EL PROGRAMA QUE TENIA ANTES PARA HABLAR CON EL CHAT, Y MIS CLASES PARA CREAR EL CHAT Y EL ASESOR, primero el programa del chat, import streamlit as st
+from clase_sql_nosql import CassandraDBChatCMessageHistory, SQLServerAsesorC ,AsesorManager ,conexion_cassandra, conexion_cassandra_vector, cargar_vector_store, conexion_sql_server from clase_retrievers import CrearRetriever from langchain.callbacks.base import BaseCallbackHandler from langchain.schema import HumanMessage, AIMessage
+
+conexion = conexion_sql_server()
+
+st.set_page_config(page_title='Chat', page_icon=':speech_balloon:') clase_sql_asesor = SQLServerAsesorC(conexion) clase_asesor = AsesorManager(conexion)
+
+class StreamHandler(BaseCallbackHandler): def init(self, container, initial_text=""): self.container = container self.text = initial_text
+
+def on_llm_new_token(self, token: str, **kwargs):
+    self.text += token
+    self.container.markdown(self.text + "▌")
+#APIS import os os.environ["OPENAI_API_KEY"] = "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" os.environ["TAVILY_API_KEY"] = "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"
+
+Conexion a Cassandra
+secure_connect = 'C:/Users/nicos/Downloads/secure-connect-asesoria.zip' token = "C:/Users/nicos/Downloads/asesoria-token.json" session = conexion_cassandra(secure_connect, token)
+
+#Chat History historial = CassandraDBChatCMessageHistory(session)
+
+#Conexion Cassandra VectorStore db = conexion_cassandra_vector()
+
+Vector Store
+_vector_store = cargar_vector_store()
+
+Obtener sesiones de chat
+sesiones = historial.obtener_sesiones() lista_sesiones = [] for sesion in sesiones: lista_sesiones.append(sesion[0])
+
+st.title("Tu Asesoría personal ha llegado..") st.markdown("""La IA generarativa es considerada como la nueva revolucion industrial.
+Por que? Estudios más resientes muestran un 37% de eficiencia en las actividades laborales y cotidianas!""")
+
+Include the upload form for new data to be Vectorized
+st.sidebar.title("Agregar conocimientos") with st.sidebar: with st.form('upload'): documentos = st.file_uploader('Proporciona documentación adicional para establecer más contexto', type=['pdf']) submitted = st.form_submit_button('Almacenar en tus datos') if submitted: retrievers = CrearRetriever(documentos) retrievers.vectorize_text(documentos, _vector_store)
+
+@st.cache_resource(show_spinner='Getting retriever') def load_retriever(_vector_store): _retriever = _vector_store.as_retriever( search_kwargs={"k": 5} ) return _retriever
+
+_retriever = load_retriever(_vector_store) #asesores = CrearAsesores() #asesor_personal = asesores.CrearAsesor()
+
+##if 'nuevo_asesor_personal' in st.session_state and st.session_state['nuevo_asesor_personal']: ##nuevo_asesor = st.session_state.get('nuevo_asesor_personal')
+
+#if 'lista_asesor_personal' in st.session_state and st.session_state['lista_asesor_personal']: #lista_nombres_asesores = st.session_state.get('lista_nombres_asesores', [])
+
+Crear el widget de radio button con los nombres de los asesores
+#lista_nombres_asesores = st.session_state.get('lista_nombres_asesores', []) st.sidebar.title("Asesor/es:") CorreoUsuario = st.session_state['user_email'] ID_Usuario = clase_sql_asesor.obtener_id_usuario(CorreoUsuario) lista_asesores = clase_asesor.obtener_asesor_personal(ID_Usuario)
+
+nombre_asesor_seleccionado = st.sidebar.radio("Seleccionar asesor:", lista_asesores)
+
+if nombre_asesor_seleccionado: nuevo_asesor = clase_asesor.asignar_asesor_personal()
+
+Obtener el objeto asesor correspondiente al nombre seleccionado
+##nuevo_asesor = st.session_state.get('nuevo_asesor_personal')
+
+Dibujar las sesiones de chat en el panel lateral izquierdo
+st.sidebar.title("Sesiones de chat existentes:") session_selected = st.sidebar.selectbox("Seleccionar sesión:", lista_sesiones)
+
+st.sidebar.title("Usuario registrado") if 'logged_in' in st.session_state and st.session_state['logged_in']: user_email = st.session_state['user_email'] st.sidebar.markdown(f"Usuario: {user_email}")
+
+Mostrar el historial de chat correspondiente cuando se selecciona una sesión
+if session_selected: chat_sesion = historial.get_chat_history(session_selected) for mensaje in chat_sesion: if isinstance(mensaje, HumanMessage): with st.chat_message('human'): st.write("Usuario:", mensaje.content) elif isinstance(mensaje, AIMessage): with st.chat_message('assistant'): st.write("Asesor:", mensaje.content) st.write("---")
+
+Draw the chat input box
+if question := st.chat_input("Consulta asesor"):
+
+# Store the user's question in a session object for redrawing next time
+historial.add_user_msj(session_selected, question)
+
+# Draw the user's question
+with st.chat_message('human'):
+    st.markdown(question)
+
+# UI placeholder to start filling with agent response
+with st.chat_message('assistant'):
+    response_placeholder = st.empty()
+
+inputs = {
+'input': question,
+'context': _retriever.get_relevant_documents(question),
+'chat_history': chat_sesion}
+
+result = nuevo_asesor.invoke(inputs, config={'callbacks': [StreamHandler(response_placeholder)]})
+
+answer = result["output"]
+
+# Store the bot's answer in a session object for redrawing next time
+historial.add_ai_msj(session_selected, answer)
+
+# Write the final answer without the cursor
+response_placeholder.markdown(answer). no me contestes
+avatar
+Streamlit
+
+Entiendo que ahora necesitas integrar la funcionalidad de selección de asesor con la creación de un objeto asesor y la iniciación de una sesión de chat. Para lograr esto, deberás seguir algunos pasos:
+
+Seleccionar el asesor: Ya tienes el código que permite seleccionar un asesor de una lista. Esto lo haces con st.radio.
+
+Crear el objeto asesor: Una vez seleccionado el asesor, debes crear el objeto asesor correspondiente. Esto lo harás llamando a un método de la clase AsesorManager que cree el objeto asesor.
+
+Iniciar la sesión de chat: Con el objeto asesor creado, necesitarás iniciar una sesión de chat. Esto puede implicar crear un nuevo registro en tu base de datos para la sesión de chat y/o recuperar el historial de chat si ya existe.
+
+Interactuar con el chat: Finalmente, permitirás al usuario enviar preguntas y recibir respuestas del asesor, lo cual implica interactuar con el objeto asesor y posiblemente con tu base de datos de historial de chat.
+
+Para el paso 2, parece que tienes un método asignar_asesor_personal que no está completamente implementado en el código que compartiste. Necesitarás asegurarte de que este método reciba todos los argumentos necesarios y cree el objeto asesor.
+
+Para el paso 3, debes decidir si cada sesión de chat es única por asesor o si un asesor puede tener múltiples sesiones de chat. Dependiendo de esto, la lógica para iniciar la sesión de chat variará.
+
+Para el paso 4, ya tienes un ejemplo de cómo manejar la interacción con el chat. Deberás integrar esto con la selección del asesor y la sesión de chat correspondiente.
+
+Dado que mencionaste que es un paso complicado y no deseas una respuesta inmediata, te recomendaría que primero te asegures de que los métodos para crear el objeto asesor y para manejar las sesiones de chat estén bien definidos y probados. Una vez que tengas eso listo, podrás integrar la interacción del chat en tu aplicación Streamlit.
+
+Si necesitas ayuda con algún paso específico o tienes preguntas sobre cómo implementar alguna de estas funcionalidades, no dudes en preguntar. Estoy aquí para ayudarte en el proceso.
+
+avatar
+Tú
+
+bueno ahroa te paso mi clase donde guardo los historiales de chat, class CassandraDBChatCMessageHistory: def init(self, session): self.session = session
+
+def obtener_sesiones(self):
+    query = """SELECT partition_id as Sesiones
+            FROM chat_app.message_store
+            GROUP BY partition_id;
+            """
+    lista_sesiones = self.session.execute(query)
+    #Retorna True si no existe
+    return lista_sesiones
+
+def get_chat_history(self, session_id):
+    #METODO DE OBTENCION PARA EL CHAT, **NO PARA LA IA** (EXPLICACION MUY IMPORTANTE)!!
+    message_history = CassandraChatMessageHistory(
+        session_id=session_id,
+        session=self.session,
+        keyspace="chat_app",
+        )
+    chat_history = message_history.messages
+    return chat_history
+
+def add_user_msj(self, session_id, question):
+   message_history = CassandraChatMessageHistory(
+        session_id=session_id,
+        session=self.session,
+        keyspace="chat_app"
+        )
+   message_history.add_user_message(question)
+   return question
+
+def add_ai_msj(self,session_id, answer):
+   message_history = CassandraChatMessageHistory(
+      session_id=session_id,
+        session=self.session,
+        keyspace="chat_app"
+        )
+   message_history.add_ai_message(answer)
+   return answer. Y AHORA MI CLASE QUE USO PARA CREAR LOS ASESORES, class AsesorManager:
+def __init__(self, conexion):
+    self.conexion = conexion
+
+def asignar_asesor_personal(self):
+    # Crear un nuevo asesor personal para el usuario y guardarlo en la estructura de datos
+    nuevo_asesor_personal = CrearAsesores.CrearAsesor()
+    return nuevo_asesor_personal
+
+def obtener_asesor_personal(self, ID_Usuario):
+    # Retorna una lista de asesores agrupados por Usuarios
+    obtener_asesor_usuario = """SELECT a.NombreAsesorC, a.Descripcion, c.NombreChat FROM Asesor_C as a
+                INNER JOIN Chat_C as c
+                ON c.ID_Asesor_C = a.ID_Asesor_C
+                WHERE a.ID_Usuario = ?;"""
+    with self.conexion.cursor() as cursor:
+        cursor.execute(obtener_asesor_usuario,(ID_Usuario,))
+        lista_asesores = cursor.fetchall()
+    return lista_asesores
+
+def valid_user_asesor(self, ID_Usuario):
+    user_asesor = """SELECT NombreAsesorC FROM Asesor_C WHERE ID_Usuario = ?"""
+    with self.conexion.cursor() as cursor:
+        cursor.execute(user_asesor, (ID_Usuario, ))
+        result = cursor.fetchone()
+        if result is not None:
+            count = result[0]
+            return count > 0
+        else:
+            # Si no se encontraron resultados, retornar False
+            return False
+avatar
+Streamlit
+
+Gracias por compartir las clases CassandraDBChatCMessageHistory y AsesorManager. Con esta información, podemos trabajar en la integración de la selección de asesores con la creación del objeto asesor y la gestión de las sesiones de chat.
+
+Aquí hay un esquema general de cómo podrías proceder:
+
+Seleccionar el asesor: Utilizas st.sidebar.radio para que el usuario seleccione un asesor de la lista obtenida por obtener_asesor_personal.
+
+Crear el objeto asesor: Una vez que el usuario selecciona un asesor, llamas al método asignar_asesor_personal para crear el objeto asesor correspondiente.
+
+Iniciar la sesión de chat: Con el objeto asesor creado, necesitas iniciar una sesión de chat. Esto podría implicar llamar a un método para crear un nuevo registro en la base de datos de Cassandra para la sesión de chat o recuperar el historial de chat si la sesión ya existe.
+
+Interactuar con el chat: Permites al usuario enviar preguntas y recibir respuestas del asesor, lo cual implica interactuar con el objeto asesor y con la base de datos de historial de chat.
+
+Para implementar esto, tu código podría verse así:
+
+PYTHON
+# ... (tu código anterior) ...
+
+# Acciones basadas en la opción seleccionada
+if menu_option == 'Mis Asesores':
+    st.title("Asesor/es:")
+    CorreoUsuario = st.session_state['user_email']
+    ID_Usuario = clase_sqlasesor.obtener_id_usuario(CorreoUsuario)
+    lista_asesores = clase_asesor.obtener_asesor_personal(ID_Usuario)
+
+    # Procesar la lista de asesores para obtener solo los nombres
+    lista_nombres_asesores = [asesor[0] for asesor in lista_asesores]
+    nombre_asesor_seleccionado = st.sidebar.radio("Seleccionar asesor:", lista_nombres_asesores)
+
+    if nombre_asesor_seleccionado:
+        # Crear el objeto asesor correspondiente al nombre seleccionado
+        nuevo_asesor = clase_asesor.asignar_asesor_personal()
+
+        # Iniciar la sesión de chat o recuperar el historial si ya existe
+        # Aquí necesitarás lógica adicional para manejar las sesiones de chat
+        # Por ejemplo, podrías tener un método en CassandraDBChatCMessageHistory que inicie una nueva sesión
+        # o que recupere el historial de una sesión existente
+
+        # Mostrar el historial de chat o iniciar una nueva sesión de chat
+        # Aquí usarías los métodos de la clase CassandraDBChatCMessageHistory para mostrar el historial
+        # o para agregar nuevos mensajes al chat
+
+# ... (resto de tu código para manejar la interacción con el chat) ...
+Es importante que el método asignar_asesor_personal esté bien definido y que realmente cree un nuevo objeto asesor. Además, necesitarás asegurarte de que la gestión de las sesiones de chat esté bien integrada con la base de datos de Cassandra y que puedas crear nuevas sesiones o recuperar el historial de sesiones existentes.
+
+Si necesitas ayuda con la implementación de alguna de estas partes o si tienes preguntas específicas sobre cómo proceder, házmelo saber y estaré encantado de asistirte.
+
+avatar
+Tú
+
+ES ALGO que tenia pensado, si elijo la variable nuevo asesor, SE CREA EL OBJETO DEL AGENTE, pero me gustaria saber bien como funciona esa programacion orientada a objetios, despues, cuando seleccione a otro asesor, la variable nuevo asesor cambia y la configuracion del asesor se pierde, quizas mi enfoque es malo, y quizas lo que se carga es el chat, para que el objeto siempre use ese historial para hablar con el usuario, ya que como bien vez, los inpus son el contexto y el chart history, pero nose bien como funciona
+
+avatar
+Streamlit
+
+Entiendo tu preocupación sobre la persistencia del objeto asesor y cómo manejar múltiples asesores. En la programación orientada a objetos, un objeto es una instancia de una clase que mantiene su estado y comportamiento. Cuando cambias de un asesor a otro, efectivamente estás cambiando el objeto que representa al asesor en tu aplicación.
+
+Para manejar múltiples asesores y sesiones de chat, puedes considerar las siguientes estrategias:
+
+Uso de variables de sesión: Streamlit tiene un concepto de estado de sesión (st.session_state) que te permite almacenar información entre diferentes ejecuciones de tu script. Puedes utilizar esto para almacenar objetos asesor o información relevante que necesites mantener a lo largo de la sesión del usuario.
+
+Carga y descarga de objetos: Si necesitas mantener el estado de un objeto asesor entre diferentes selecciones, podrías considerar serializar el estado del objeto (guardarlo en una forma que pueda ser almacenado en una base de datos o archivo) y luego deserializarlo (reconstruir el objeto a partir de esa información) cuando el usuario seleccione ese asesor nuevamente.
+
+Enfoque basado en chat: Como mencionaste, otra estrategia es centrarse en la sesión de chat en lugar del objeto asesor. En este caso, cada asesor podría estar asociado con un historial de chat único. Cuando el usuario selecciona un asesor, recuperas el historial de chat correspondiente y lo usas para mantener la continuidad de la conversación. El "asesor" en este caso podría ser simplemente una interfaz que utiliza el historial de chat para generar respuestas.
+
+Aquí hay un ejemplo de cómo podrías implementar la selección de asesor utilizando st.session_state para mantener el estado entre diferentes selecciones:
+
+PYTHON
+# ... (tu código anterior) ...
+
+# Acciones basadas en la opción seleccionada
+if menu_option == 'Mis Asesores':
+    st.title("Asesor/es:")
+    CorreoUsuario = st.session_state['user_email']
+    ID_Usuario = clase_sqlasesor.obtener_id_usuario(CorreoUsuario)
+    lista_asesores = clase_asesor.obtener_asesor_personal(ID_Usuario)
+
+    # Procesar la lista de asesores para obtener solo los nombres
+    lista_nombres_asesores = [asesor[0] for asesor in lista_asesores]
+    nombre_asesor_seleccionado = st.sidebar.radio("Seleccionar asesor:", lista_nombres_asesores)
+
+    if nombre_asesor_seleccionado:
+        # Si el asesor seleccionado cambia, actualizamos el objeto asesor en la sesión
+        if 'asesor_actual' not in st.session_state or st.session_state['asesor_actual'] != nombre_asesor_seleccionado:
+            st.session_state['asesor_actual'] = nombre_asesor_seleccionado
+            # Crear el objeto asesor correspondiente al nombre seleccionado
+            nuevo_asesor = clase_asesor.asignar_asesor_personal()
+            # Almacenar el objeto asesor en el estado de la sesión
+            st.session_state['objeto_asesor'] = nuevo_asesor
+
+        # Utilizar el objeto asesor almacenado en la sesión
+        asesor_actual = st.session_state['objeto_asesor']
+
+        # Aquí continúas con la lógica para manejar la sesión de chat y la interacción
+
+# ... (resto de tu código para manejar la interacción con el chat) ...
+En este ejemplo, cuando el usuario selecciona un asesor, verificamos si el asesor actual ha cambiado. Si es así, actualizamos el estado de la sesión con el nuevo asesor y creamos el objeto asesor correspondiente. Luego, almacenamos ese objeto en st.session_state para que pueda ser utilizado en futuras interacciones sin perder su configuración.
+
+Es importante tener en cuenta que la serialización y deserialización de objetos puede ser compleja, especialmente si los objetos contienen conexiones a bases de datos o recursos que no se pueden serializar fácilmente. En esos casos, es posible que necesites almacenar solo la información necesaria para recrear el objeto más que el objeto en sí.
+
+Espero que esto te ayude a comprender mejor cómo manejar múltiples asesores y sesiones de chat en tu aplicación Streamlit. Si tienes más preguntas o necesitas aclaraciones adicionales, no dudes en preguntar.

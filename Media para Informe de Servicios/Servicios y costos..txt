@@ -1,0 +1,102 @@
+APACHE CASSANDRA NO SQL
+
+*DataStax
+Pas as you go AstraDB (Base de datos de chats)
+
+PROS =
+- Abonas solo por lo que se utiliza.
+- Escala automaticamente si tenes picos de mayor uso.
+- Se puede construir y lanzar sistemas en AWS, Azure o Google Cloud.
+- Bases de datos en multiples regiones.
+- Seguridad privada de conexion.
+- Soporte de comunidad.
+
+CONTRAS = 
+- Es un sistema complejo de utilizar.
+- Dificultad a la hora de traer extractos o partes de chats especificos de ciertos usuarios.
+- Al escalar rapidamente, el servicio de almacenamiento (chats y archivos) es costoso.
+(Lo recomendable es usar la prueba gratuita en un Test y ver cuanto usamos en ese "perdiodo de produccion")
+
+
+INFORME =
+Si bien existen otras contras como por ejemplo la dificultad de hacer transacciones, nosotros no nos preocupamos ya que las transacciones las hacemos con la base de datos SQL Server.
+En esta base de datos solo almacenamos el chat de los usuarios y la IA y tambien los archivos que estos suben.
+
+SQL Y APLICACIÓN.
+
+*IONOS
+
+PROS=
+- Almacenamiento en SSD
+- Solucion en windows o linux
+- Facilidad para configurar servidor cloud
+- Precios relativamente accesibles para las necesidades
+
+CONTRAS=
+- Reseñas negativas al darse de baja.
+- Reseñas negativas en fases contractuales.
+- Soporte tecnico deja un poco que desear.
+
+INFORME DE SERVIDOR =
+VPS ionos y VPS Ionos precio .png
+
+*GOOGLE CLOUD SQL 
+
+PROS =
+- Más servicios que Ionos
+- Calculadora de precio
+- Permite implenetacion gratuita
+- SSD de almacenamiento
+- Metodos efectivos de seguridad de datos
+
+CONTRAS = 
+- Soporte tecnico tarda.
+- Menos regiones y zonas de disponibilidad
+- Menos servicios que AWS
+
+PRECIOS =CLOUD VPS 1 2 Y3 .PNG
+
+INFORME = HACER LA PRUEBA GRATUITA Y LUEGO HACER ESTIMACIONES
+
+API DE SISTEMA 
+
+*GOOGLE APY KEY
+Los clientes nuevos obtienen $300 en créditos gratuitos para probar los productos de Google Cloud y crear una prueba de concepto.
+No se te cobrará hasta que actives tu cuenta pagada completa.
+
+api gemini1 .png
+
+PROS =
+- Tiene menos restricciones que OpenAI.
+- Requiere de menos parametros para configurar al agente.
+- No hay tantas interferencias para entre la api y el sistema. Por lo tanto tiene una velocidad de respuesta aceptable.
+
+CONTRAS =
+- No es tan sofisticado como GPT
+- El sistema de pagos es complejo, no hay forma de establecer un aproximado de gasto (Se puede hacer una prueba gratuita).
+- El panel de control de la api no es entendible, muestra metricas que no permiten establecer el uso real de la misma
+
+PRECIOS = Api Gemini 1.png
+
+INFORMES = LA IDEA ES USAR LOS 300 DOLARES Y VER EN CUANTO TIEMPO SE GASTAN.
+
+*COHERE EMBEDDINGS
+PROS =
+- Cosumen menos recursos que los embeddings de OpenAI
+- No requieren tanta parametrizacion
+
+CONTRAS =
+- Calculo de uso complejo
+- Poco servicio tecnico
+- Posee menos capacidad que los embeddigs de openai
+
+INFORME = La aplicacion estara limitada por el tamaño de los archivos y la calidad de retornar los mismos para la respuesta de los usuarios. Es decir que estas tendran menos volumnen.
+Sin embargo para pruebas y desarrollo de primer version es aceptable y cumple con espectativas
+
+
+PRECIOS = Planes en cohere1
+(contactandome con proveedores)
+
+La idea es consumir los creditos gratuitos y realizar un estimado de cuanto se necesitara.
+
+
